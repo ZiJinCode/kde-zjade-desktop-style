@@ -1,11 +1,11 @@
 #!/bin/sh
 
 # ========== Setting Variable ==========
+SCRIPT_NAME=theme_script
 WINDOW_STYLE_NAME="RoundedSBE"
 # ======================================
 
 # --------------------------------------
-
 # ---------- Main Variable ----------
 
 MAIN_PATH="$(dirname $(cd $(dirname $0);pwd))"
@@ -181,6 +181,9 @@ windowStyleInstall() {
 }
 
 # Main --------------------------------
+
+printVariable
+printProperties
 
 ## Init Properties
 while [[ $# -gt 0 ]];do
