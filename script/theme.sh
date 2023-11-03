@@ -17,8 +17,8 @@ THEME_PATH="$MAIN_PATH/theme"
 declare -A properties
 commands=()
 commands[0]='--local'
-commands[1]='--noinstall'
-
+commands[1]='--kvantum_no_install'
+commands[2]='--roundedsbe_dep_no_install'
 # -----------------------------------
 
 
@@ -61,7 +61,7 @@ setProperty() {
 isExistKey() {
     local i_key=$1
     for key in ${!properties[@]};do
-        if [[ $i_key == key ]];then
+        if [[ $i_key == $key ]];then
             return 0
         fi
     done
@@ -143,16 +143,17 @@ kvantumInstall() {
     # Kvantum manager
     isExistKey '--noinstall'
     if [[ $? == '0' ]];then
+        echo "Jmp Install"
+    else 
         echo "depend pacman"
         echo "Install >>>>>>>>>>>>>>>>>>>>>>>>"
         sudo pacman -Syy kvantum
-    else 
-        echo "Jmp Install"
     fi
 
     if [ ! -d "$HOME_PATH/.config/Kvantum" ];then
-        ehco "!!!ERROR: 不存在!!! $HOME_PATH/.config/Kvantum"
-        exit 1
+        echo "!!!ERROR: 不存在!!! $HOME_PATH/.config/Kvantum"
+        echo ">>> 已创建"
+        mkdir $HOME_PATH/.config/Kvantum
     fi
 
     sudo cp -Rf $THEME_PATH/kvantum_theme/* $HOME_PATH/.config/Kvantum
@@ -169,6 +170,11 @@ windowStyleInstall() {
     fi
 
     sudo cp -Rf $THEME_PATH/window_style/$WINDOW_STYLE_NAME /opt/local/kdemodule/
+
+    isExistKey '--roundedsbe_dep_no_install'
+    if [[ $? != '0' ]];then
+        sudo pacman -Syy git make cmake gcc gettext extra-cmake-modules qt5-tools kcrash kglobalaccel kde-dev-utils kio knotifications kinit kwin kdecoration qt5-declarative qt5-x11extras
+    fi
 
     cd /opt/local/kdemodule/$WINDOW_STYLE_NAME
     sudo ./install.sh
@@ -212,5 +218,5 @@ else
 fi
 
 shareInstallTheme
-kvantumInstall
+kvantumInstall "${properties['--local']}"
 windowStyleInstall
