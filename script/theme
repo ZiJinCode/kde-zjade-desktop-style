@@ -16,9 +16,9 @@ THEME_PATH="$MAIN_PATH/theme"
 
 declare -A properties
 commands=()
-commands[0]='--local'
-commands[1]='--kvantum_no_install'
-commands[2]='--roundedsbe_dep_no_install'
+commands[0]='--local'   # Value HomePath
+commands[1]='--kvantum-no-install'
+commands[2]='--roundedsbe-dep-no-install'
 # -----------------------------------
 
 
@@ -51,6 +51,13 @@ check_command() {
     return 1
 }
 
+# param1: check path
+checkMkdirPath() {
+    if [ ! -d $1 ];then
+        sudo mkdir -p $1
+    fi
+}
+
 # param1: key
 # param2: value
 setProperty() {
@@ -77,13 +84,15 @@ localInstallTheme() {
 
     # Icon
     # cp to /usr/share/icons/
+    checkMkdirPath "$SHARE_PATH/icons/"
     for dir_path in "$THEME_PATH/icons"/*;do
         new_dir_name="$(basename $dir_path)-icon"
         cp -Rf $dir_path $SHARE_PATH/icons/$new_dir_name
     done
 
     # Cursors
-    # cp to /usr/share/icons/*-cursors
+    # cp to /usr/share/icons/*-
+    checkMkdirPath "$SHARE_PATH/cursors"
     for dir_path in "$THEME_PATH/cursors"/*;do
         new_dir_name="$(basename $dir_path)-cursors"
         cp -Rf $dir_path $SHARE_PATH/icons/$new_dir_name
@@ -91,8 +100,16 @@ localInstallTheme() {
 
     # plasma Theme
     # cp to /usr/share/plasma/desktoptheme
+    checkMkdirPath "$SHARE_PATH/plasma/desktoptheme"
     for dir_path in "$THEME_PATH/plasma_theme"/*;do
-        cp -Rf $dir_path $SHARE_PATH/icons/
+        cp -Rf $dir_path $SHARE_PATH/plasma/desktoptheme/
+    done
+
+    # color
+    # cp to /usr/share/color-schemes
+    checkMkdirPath "$SHARE_PATH/color-schemes"
+    for dir_path in "$THEME_PATH/color-schemes"/*;do
+        cp -Rf $dir_path $SHARE_PATH/color-schemes
     done
 }
 
@@ -116,6 +133,12 @@ globalInstallTheme() {
     for dir_path in "$THEME_PATH/plasma_theme"/*;do
         sudo cp -Rf $dir_path /usr/share/plasma/desktoptheme/
     done
+
+    # color
+    # cp to /usr/share/color-schemes
+    for dir_path in "$THEME_PATH/color-schemes"/*;do
+        cp -Rf $dir_path /usr/share/color-schemes
+    done
 }
 
 shareInstallTheme() {
@@ -131,6 +154,9 @@ shareInstallTheme() {
     # /usr/share/grub/themes
     sudo cp -Rf $THEME_PATH/grub_theme/* /usr/share/grub/themes
 
+    # wallpapers
+    sudo cp -Rf $THEME_PATH/wallpapers/*  /usr/share/wallpapers
+
     # Fonts
     # /usr/share/fonts
     sudo cp -Rf $THEME_PATH/fonts/* /usr/share/fonts
@@ -141,7 +167,7 @@ shareInstallTheme() {
 kvantumInstall() {
     local HOME_PATH=$1
     # Kvantum manager
-    isExistKey '--noinstall'
+    isExistKey '--kvantum-no-install'
     if [[ $? == '0' ]];then
         echo "Jmp Install"
     else 
@@ -171,7 +197,7 @@ windowStyleInstall() {
 
     sudo cp -Rf $THEME_PATH/window_style/$WINDOW_STYLE_NAME /opt/local/kdemodule/
 
-    isExistKey '--roundedsbe_dep_no_install'
+    isExistKey '--roundedsbe-dep-no-install'
     if [[ $? != '0' ]];then
         sudo pacman -Syy git make cmake gcc gettext extra-cmake-modules qt5-tools kcrash kglobalaccel kde-dev-utils kio knotifications kinit kwin kdecoration qt5-declarative qt5-x11extras
     fi

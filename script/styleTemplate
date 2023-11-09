@@ -17,6 +17,8 @@ DESKTOP_STYLE_CONFIG="$MAIN_PATH/desktop_style_config"
 
 declare -A properties
 commands=()
+commands[0]='--copy'   # Value config path
+commands[1]='--run'    # Value config path
 # -----------------------------------
 
 
@@ -47,6 +49,13 @@ check_command() {
         fi
     done
     return 1
+}
+
+# param1: check path
+checkMkdirPath() {
+    if [ ! -d $1 ];then
+        sudo mkdir -p $1
+    fi
 }
 
 # param1: key
@@ -88,12 +97,44 @@ copyConfig() {
     # kwin condig
     cp -rf "$SYS_CONFIG_PATH/kwinrc" "$DESKTOP_STYLE_CONFIG/"
     cp -rf "$SYS_CONFIG_PATH/kwinrulesrc" "$DESKTOP_STYLE_CONFIG/"
+
+    #config input devices 
+    cp -rf "$SYS_CONFIG_PATH/kcminputrc" "$DESKTOP_STYLE_CONFIG/"
+
+    #shortcuts 全局快捷键
+    cp -rf "$SYS_CONFIG_PATH/kglobalshortcutsrc" "$DESKTOP_STYLE_CONFIG/"
+
+    #klipper config
+    cp -rf "$SYS_CONFIG_PATH/klipperrc" "$DESKTOP_STYLE_CONFIG/"
+
+    #kscreenlocker config
+    cp -rf "$SYS_CONFIG_PATH/kscreenlockerrc" "$DESKTOP_STYLE_CONFIG/"
+
+    #dolphin config
+    cp -rf "$SYS_CONFIG_PATH/dolphinrc" "$DESKTOP_STYLE_CONFIG/"
+
+    #konsole config
+    cp -rf "$SYS_CONFIG_PATH/konsolerc" "$DESKTOP_STYLE_CONFIG/"
+
+    #krunner config
+    cp -rf "$SYS_CONFIG_PATH/krunnerrc" "$DESKTOP_STYLE_CONFIG/krunnerrc"
+
+    #kvantum config
+    # mkdir -p $DESKTOP_STYLE_CONFIG/_Kvantum
+    cp -rf "$SYS_CONFIG_PATH/Kvantum/kvantum.kvconfig" "$DESKTOP_STYLE_CONFIG/_Kvantum"
+
+    # sddm
+    sudo cp -rf /etc/sddm.conf $MAIN_PATH/
 }
 
 # param1: config path
 setStyle() {
     local SYS_CONFIG_PATH=$1
     sudo cp -Rf $DESKTOP_STYLE_CONFIG/* $SYS_CONFIG_PATH
+    
+    checkMkdirPath "$SYS_CONFIG_PATH/Kvantum/"
+    cp -Rf $DESKTOP_STYLE_CONFIG/_Kvantum/kvantum.kvconfig $SYS_CONFIG_PATH/Kvantum/
+    sudo cp -Rf $MAIN_PATH/sddm.conf /etc/
 }
 
 # Main
@@ -133,9 +174,9 @@ if [[ $? == '0' ]];then
     copyConfig "${properties['--copy']}"
 fi
 
-isExistKey 'run'
+isExistKey '--run'
 if [[ $? == '0' ]];then
-    setStyle "${properties['run']}"
+    setStyle "${properties['--run']}"
 else
     echo -e "!!!ERROR: command"
 fi
