@@ -1,229 +1,234 @@
 #!/bin/sh
 
-# ========== Setting Variable ==========
-SCRIPT_NAME=theme_script
-WINDOW_STYLE_NAME="RoundedSBE"
-# ======================================
+# param !!!local or global >>> path
 
 # --------------------------------------
-# ---------- Main Variable ----------
-
+# Main Variable:
 MAIN_PATH="$(dirname $(cd $(dirname $0);pwd))"
-SCRIPT_PATH="$MAIN_PATH/script"
+SCRIPT_PATH="$MAIN_PATH/script" # !!!---------------->>>
 SCRIPT_FILE_PATH="$SCRIPT_PATH/$(basename $0)"
 
-THEME_PATH="$MAIN_PATH/theme"
+# Upload common shell file:
+printOut $SCRIPT_PATH
+source $SCRIPT_PATH/common
 
 declare -A properties
 commands=()
-commands[0]='--local'   # Value HomePath
-commands[1]='--kvantum-no-install'
-commands[2]='--roundedsbe-dep-no-install'
+commands[0]='--local'   # local share path
+commands[1]='--global'  
+commands[2]='--no-install-kvatum'
+commands[3]='--no-install-roundedsbe'
+commands[4]='--no-install-roundedsbe-dep'
+
+# User Settings:
+SCRIPT_NAME=theme_script
+WINDOW_STYLE_NAME="RoundedSBE"
+
+THEME_PATH="$RESOURCE_PATH/theme"
+GLOBAL_THEME_PATH="/usr/share"
+
+arr_checkThemesPath=( \
+    "$THEME_PATH/fonts" \
+    "$THEME_PATH/icons" \
+    "$THEME_PATH/cursors" \
+    "$THEME_PATH/colors" \
+    "$THEME_PATH/plasma_theme" \
+    "$THEME_PATH/kvantum_theme" \
+    "$THEME_PATH/window_style" \
+    "$THEME_PATH/wallpapers" \
+    "$THEME_PATH/gtk_theme" \
+    "$THEME_PATH/grub_theme" \
+    "$THEME_PATH/sddm_theme" \
+)
 # -----------------------------------
 
+# -----------------------------------
+# Functions:
 
-# -------------- Base Function --------------
-printVariable() {
-    echo ">>> ==================================="
-    echo ">>> MAIN_PATH: $MAIN_PATH"
-    echo ">>> SCRIPT_PATH: $SCRIPT_PATH"
-    echo ">>> SCRIPT_FILE_PATH: $SCRIPT_FILE_PATH"
-    echo ">>> ==================================="
+installKvantum() {
+    printOut "Kvantum Install"
+    local pacman_out=$(yes | pacman -Syy kvantum 2>&1)
+    printOut "$pacman_out"
+    printWARNING "Start Kvantummanager, close after 2 seconds"
+    kvantummanager
+    sleep 2
+    local kvantummanager_pid=`ps -ef | grep kvantummanager | grep -v grep | awk '{print $2}'`
+    kill -9 $kvantummanager_pid
+    printWARNING "Kill kvantummanager"
+    printOut "Kvantum Installed"
 }
 
-printProperties() {
-    # Print Properties
-    echo ">>> ==================================="
-    for key in ${!properties[@]};do
-        echo "K: $key -> V: ${properties["$key"]}}"
-    done
-    echo ">>> ==================================="
+installDepForRoundedSBE() {
+    printOut "RoundedSBE Depend install"
+    local pacman_out=$(yes | pacman -Syy git make cmake gcc gettext extra-cmake-modules qt5-tools kcrash kglobalaccel kde-dev-utils kio knotifications kinit kwin kdecoration qt5-declarative qt5-x11extras 2>&1)
+    printOut "$pacman_out"
+    printOut "RoundedSBE Depend installed"
 }
 
-# param1: command
-check_command() {
-    local i_command=$1
-    for command in ${commands[@]};do
-        if [[ $command == $i_command ]];then
-            return 0
-        fi
-    done
-    return 1
-}
+installRoundedSBE() {
+    local INSTALL_PATH="/opt/local/kde"
 
-# param1: check path
-checkMkdirPath() {
-    if [ ! -d $1 ];then
-        sudo mkdir -p $1
+    printOut "RoundedSBE install"
+    checkMkdir $INSTALL_PATH
+    printWARNING "Check Msg: $INSTALL_PATH, state: $?"
+    cp -Rf $THEME_PATH/window_style/$WINDOW_STYLE_NAME $INSTALL_PATH
+
+    checkMkdir $INSTALL_PATH/$WINDOW_STYLE_NAME
+    printWARNING "Check Msg: $INSTALL_PATH/$WINDOW_STYLE_NAME, state: $?"
+    if [[ $? == '0' ]];then
+        printERROR "No Software path fond!"
     fi
+
+    cd $INSTALL_PATH/$WINDOW_STYLE_NAME
+    printOut "$(ls -la | grep ./install.sh)"
+    local out=$(./install.sh 2>&1)
+    printOut "$out"
+    printOut "RoundedSBE installed"
 }
 
-# param1: key
-# param2: value
-setProperty() {
-    properties["$1"]=$2
+# param1: mod:> local or global
+# param2: Local Config Path
+kvantumInstallTheme() {
+    local mod=$1
+    local LOCAL_CONFIG_PATH=$2
+
+    printOut "Kvantum Theme Install"
+
+    local LOCAL_KVANTUM_PATH="$LOCAL_CONFIG_PATH/Kvantum"
+    local GLOBAL_KVANTUM_PATH='/usr/share/Kvantum'
+    checkMkdir $GLOBAL_KVANTUM_PATH
+    printWARNING "Check Msg: $GLOBAL_KVANTUM_PATH, state: $?"
+    checkMkdir $LOCAL_KVANTUM_PATH
+    printWARNING "Check Msg: $LOCAL_KVANTUM_PATH, state: $?"
+
+    if [[ $mod == 'local' ]];then
+        cp -Rf $THEME_PATH/kvantum_theme/* $LOCAL_KVANTUM_PATH
+    elif [[ $mod == 'global' ]];then
+        cp -Rf $THEME_PATH/kvantum_theme/* $GLOBAL_KVANTUM_PATH
+    else
+        printERROR "func kvantumInstallTheme Command Error!!!"
+        exit 1
+    fi
+
+    printOut "Kvantum Theme Installed"
 }
 
-# param1: key
-isExistKey() {
-    local i_key=$1
-    for key in ${!properties[@]};do
-        if [[ $i_key == $key ]];then
-            return 0
-        fi
-    done
-    return 1
-}
+commonInstallTheme() {
+    printOut "Common Theme Install"
+    # GTK Theme
+    checkMkdir $GLOBAL_THEME_PATH/themes
+    printWARNING "Check Msg: $GLOBAL_THEME_PATH/themes, state: $?"
+    cp -Rf $THEME_PATH/gtk_theme/* $GLOBAL_THEME_PATH/themes
+    
+    # Wallpapers
+    checkMkdir $GLOBAL_THEME_PATH/wallpapers
+    printWARNING "Check Msg: $GLOBAL_THEME_PATH/wallpapers, state: $?"
+    cp -Rf $THEME_PATH/wallpapers/* $GLOBAL_THEME_PATH/wallpapers
 
-# -------------------------------------------
+    # Fonts
+    checkMkdir $GLOBAL_THEME_PATH/fonts
+    printWARNING "Check Msg: $GLOBAL_THEME_PATH/fonts, state: $?"
+    cp -Rf $THEME_PATH/fonts/* $GLOBAL_THEME_PATH/fonts
+    fc-cache -f -v
 
-# param Home_Path
-localInstallTheme() {
-    local HOME_PATH=$1
-    local SHARE_PATH="$HOME_PATH/.local/share"
+    # SDDM Theme
+    checkMkdir $GLOBAL_THEME_PATH/sddm/themes
+    printWARNING "Check Msg: $GLOBAL_THEME_PATH/sddm/themes, state: $?"
+    cp -Rf $THEME_PATH/sddm_theme/* $GLOBAL_THEME_PATH/sddm/themes
 
-    # Icon
-    # cp to /usr/share/icons/
-    checkMkdirPath "$SHARE_PATH/icons/"
-    for dir_path in "$THEME_PATH/icons"/*;do
-        new_dir_name="$(basename $dir_path)-icon"
-        cp -Rf $dir_path $SHARE_PATH/icons/$new_dir_name
-    done
+    # Grub Theme
+    checkMkdir $GLOBAL_THEME_PATH/grub/themes
+    printWARNING "Check Msg: $GLOBAL_THEME_PATH/grub/themes, state: $?"
+    cp -Rf $THEME_PATH/grub_theme/* $GLOBAL_THEME_PATH/grub/themes
 
-    # Cursors
-    # cp to /usr/share/icons/*-
-    checkMkdirPath "$SHARE_PATH/cursors"
-    for dir_path in "$THEME_PATH/cursors"/*;do
-        new_dir_name="$(basename $dir_path)-cursors"
-        cp -Rf $dir_path $SHARE_PATH/icons/$new_dir_name
-    done
-
-    # plasma Theme
-    # cp to /usr/share/plasma/desktoptheme
-    checkMkdirPath "$SHARE_PATH/plasma/desktoptheme"
-    for dir_path in "$THEME_PATH/plasma_theme"/*;do
-        cp -Rf $dir_path $SHARE_PATH/plasma/desktoptheme/
-    done
-
-    # color
-    # cp to /usr/share/color-schemes
-    checkMkdirPath "$SHARE_PATH/color-schemes"
-    for dir_path in "$THEME_PATH/color-schemes"/*;do
-        cp -Rf $dir_path $SHARE_PATH/color-schemes
-    done
+    printOut "Common Theme Installed"
 }
 
 globalInstallTheme() {
+    local GLOBAL_SHARE_PATH="/usr/share"
+
+    printOut "Global Theme Install"
     # Icon
-    # cp to /usr/share/icons/
+    checkMkdir $GLOBAL_SHARE_PATH/icons
+    printWARNING "Check Msg: $GLOBAL_SHARE_PATH/icons, state: $?"
     for dir_path in "$THEME_PATH/icons"/*;do
         new_dir_name="$(basename $dir_path)-icon"
-        sudo cp -Rf $dir_path /usr/share/icons/$new_dir_name
+        cp -Rf $dir_path $GLOBAL_SHARE_PATH/icons/$new_dir_name
     done
 
     # Cursors
-    # cp to /usr/share/icons/*-cursors
+    checkMkdir $GLOBAL_SHARE_PATH/icons
+    printWARNING "Check Msg: $GLOBAL_SHARE_PATH/icons, state: $?"
     for dir_path in "$THEME_PATH/cursors"/*;do
         new_dir_name="$(basename $dir_path)-cursors"
-        sudo cp -Rf $dir_path /usr/share/icons/$new_dir_name
+        cp -Rf $dir_path $GLOBAL_SHARE_PATH/icons/$new_dir_name
     done
 
-    # plasma Theme
-    # cp to /usr/share/plasma/desktoptheme
-    for dir_path in "$THEME_PATH/plasma_theme"/*;do
-        sudo cp -Rf $dir_path /usr/share/plasma/desktoptheme/
+    # Plasma Theme
+    checkMkdir $GLOBAL_SHARE_PATH/plasma/desktoptheme
+    printWARNING "Check Msg: $GLOBAL_SHARE_PATH/plasma/desktoptheme, state: $?"
+    cp -Rf $THEME_PATH/plasma_theme/* $GLOBAL_SHARE_PATH/plasma/desktoptheme/
+
+    # Color
+    checkMkdir $GLOBAL_SHARE_PATH/color-schemes
+    printWARNING "Check Msg: $GLOBAL_SHARE_PATH/color-schemes, state: $?"
+    cp -Rf $THEME_PATH/colors/* $GLOBAL_SHARE_PATH/color-schemes
+
+    printOut "Global Theme Installed"
+}
+
+# param1: local share path
+localInstallTheme() {
+    local LOCAL_SHARE_PATH=$1
+
+    printOut "Local Theme Install"
+    # Icon
+    checkMkdir $LOCAL_SHARE_PATH/icons
+    printWARNING "Check Msg: $LOCAL_SHARE_PATH/icons, state: $?"
+    for dir_path in "$THEME_PATH/icons"/*;do
+        new_dir_name="$(basename $dir_path)-icon"
+        cp -Rf $dir_path $LOCAL_SHARE_PATH/icons/$new_dir_name
     done
 
-    # color
-    # cp to /usr/share/color-schemes
-    for dir_path in "$THEME_PATH/color-schemes"/*;do
-        cp -Rf $dir_path /usr/share/color-schemes
+    # Cursors
+    checkMkdir $LOCAL_SHARE_PATH/icons
+    printWARNING "Check Msg: $LOCAL_SHARE_PATH/icons, state: $?"
+    for dir_path in "$THEME_PATH/cursors"/*;do
+        new_dir_name="$(basename $dir_path)-cursors"
+        cp -Rf $dir_path $LOCAL_SHARE_PATH/icons/$new_dir_name
     done
+
+    # Plasma Theme
+    checkMkdir $LOCAL_SHARE_PATH/plasma/desktoptheme
+    printWARNING "Check Msg: $LOCAL_SHARE_PATH/plasma/desktoptheme, state: $?"
+    cp -Rf $THEME_PATH/plasma_theme/* $LOCAL_SHARE_PATH/plasma/desktoptheme/
+
+    # Color
+    checkMkdir $LOCAL_SHARE_PATH/color-schemes
+    printWARNING "Check Msg: $LOCAL_SHARE_PATH/color-schemes, state: $?"
+    cp -Rf $THEME_PATH/colors/* $LOCAL_SHARE_PATH/color-schemes
+
+    printOut "Local Theme Installed"
 }
 
-shareInstallTheme() {
-    # gtk_theme
-    # cp to /usr/share/themes
-    sudo cp -Rf $THEME_PATH/gtk_theme/* /usr/share/themes
 
-    # sddm
-    # /usr/share/sddm/themes
-    sudo cp -Rf $THEME_PATH/sddm_theme/* /usr/share/sddm/themes
-
-    # grub
-    # /usr/share/grub/themes
-    sudo cp -Rf $THEME_PATH/grub_theme/* /usr/share/grub/themes
-
-    # wallpapers
-    sudo cp -Rf $THEME_PATH/wallpapers/*  /usr/share/wallpapers
-
-    # Fonts
-    # /usr/share/fonts
-    sudo cp -Rf $THEME_PATH/fonts/* /usr/share/fonts
-    sudo fc-cache -f -v
-}
-
-# param HomePath
-kvantumInstall() {
-    local HOME_PATH=$1
-    # Kvantum manager
-    isExistKey '--kvantum-no-install'
-    if [[ $? == '0' ]];then
-        echo "Jmp Install"
-    else 
-        echo "depend pacman"
-        echo "Install >>>>>>>>>>>>>>>>>>>>>>>>"
-        sudo pacman -Syy kvantum
-    fi
-
-    if [ ! -d "$HOME_PATH/.config/Kvantum" ];then
-        echo "!!!ERROR: 不存在!!! $HOME_PATH/.config/Kvantum"
-        echo ">>> 已创建"
-        mkdir $HOME_PATH/.config/Kvantum
-    fi
-
-    sudo cp -Rf $THEME_PATH/kvantum_theme/* $HOME_PATH/.config/Kvantum
-}
-
-windowStyleInstall() {
-    # window style
-    if [ ! -d "/opt/local/kdemodule" ];then
-        sudo mkdir -p /opt/local/kdemodule
-    fi
-
-    if [ -d "/opt/local/kdemodule/$WINDOW_STYLE_NAME" ];then
-        sudo rm -rf /opt/local/kdemodule/$WINDOW_STYLE_NAME
-    fi
-
-    sudo cp -Rf $THEME_PATH/window_style/$WINDOW_STYLE_NAME /opt/local/kdemodule/
-
-    isExistKey '--roundedsbe-dep-no-install'
-    if [[ $? != '0' ]];then
-        sudo pacman -Syy git make cmake gcc gettext extra-cmake-modules qt5-tools kcrash kglobalaccel kde-dev-utils kio knotifications kinit kwin kdecoration qt5-declarative qt5-x11extras
-    fi
-
-    cd /opt/local/kdemodule/$WINDOW_STYLE_NAME
-    sudo ./install.sh
-}
-
-# Main --------------------------------
-
+# Main -------------------------------
 printVariable
-printProperties
+sleep 2
 
 ## Init Properties
 while [[ $# -gt 0 ]];do
     # Key
-    check_command $1
+    check_command commands $1
     if [[ $? == '0' ]];then
         key=$1
     else
-        echo "没有这个命令"
+        printERROR "Command init ERROR"
         exit 1
     fi
 
     # Value
-    check_command $2
+    check_command commands $2
     if [[ $? == '0' ]];then
         value=''
     else
@@ -234,18 +239,93 @@ while [[ $# -gt 0 ]];do
         fi
     fi
 
-    setProperty $key $value
+    setProperty properties $key $value
     if [[ -z $value ]];then shift 1; else shift 2; fi 
 done
 
-## Main Flow
-isExistKey '--local'
-if [[ $? == '0' ]];then
-    localInstallTheme "${properties['--local']}"
-else 
-    globalInstallTheme
+printProperties properties
+sleep 4
+
+## init check command
+isExistKey properties '--local'
+state1=$?
+isExistKey properties '--global'
+state2=$?
+printOut "State1: $state1 | State2: $state2"
+if [ $state1 == '1' ] && [ $state2 == '1' ];then
+    printERROR "Missing key parameters"
+    exit 1
+fi
+unset state1
+unset state2
+
+## init check path
+isExistPath $THEME_PATH
+if [[ $? == '1' ]];then
+    printERROR "No $THEME_PATH"
+    exit 1
 fi
 
-shareInstallTheme
-kvantumInstall "${properties['--local']}"
-windowStyleInstall
+for_errors_path=()
+for_check_status=0
+for path in ${arr_checkThemesPath[@]};do
+    isExistPath $path
+    
+    if [[ $? == '1' ]];then
+        for_errors_path+=("$path")
+        for_check_status=1
+    fi
+done
+
+if [[ $for_check_status == '1' ]];then
+    for path in ${for_errors_path[@]};do
+        printERROR "No $path"
+    done
+    exit 1
+fi
+unset for_errors_path
+unset for_check_status
+
+## Flow
+### Kvantum
+isExistKey properties '--no-install-kvatum'
+if [[ $? == '1' ]];then
+    installKvantum
+else
+    printWARNING "Skip install kvantum"
+fi
+
+### RoundedSBE Dep
+isExistKey properties '--no-install-roundedsbe-dep'
+if [[ $? == '1' ]];then
+    installDepForRoundedSBE
+else
+    printWARNING "Skip install RoundedSBE Dep"
+fi
+
+### RoundedSBE
+isExistKey properties '--no-install-roundedsbe'
+if [[ $? == '1' ]];then
+    installRoundedSBE
+else
+    printWARNING "Skip install RoundedSBE"
+fi
+
+### Common Theme
+commonInstallTheme
+
+### Local Theme
+isExistKey properties '--local'
+if [[ $? == '0' ]];then
+    localInstallTheme "${properties['--local']}"
+    kvantumInstallTheme 'local' "$(dirname $(dirname ${properties['--local']}))/.config"
+fi
+
+### Global Theme
+isExistKey properties '--global'
+if [[ $? == '0' ]];then
+    globalInstallTheme
+    kvantumInstallTheme 'global'
+fi
+
+printOut " ------- Execution complete ------- "

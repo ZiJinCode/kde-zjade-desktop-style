@@ -1,26 +1,138 @@
 #!/bin/sh
 
-# --------------------------------------------------
-this_script_path=$0
-script_path=$(cd $(dirname $0);pwd)
-main_path=$(dirname $script_path)
-# --------------------------------------------------
+# param 
+# --------------------------------------
+# Main Variable:
+MAIN_PATH="$(dirname $(cd $(dirname $0);pwd))"
+SCRIPT_PATH="$MAIN_PATH/script" # !!!---------------->>>
+SCRIPT_FILE_PATH="$SCRIPT_PATH/$(basename $0)"
 
-printBasePath() {
-    echo "============================="
-    echo "Base Path: "
-    echo "this_script_path: $this_script_path"
-    echo "script_path: $script_path"
-    echo "main_path: $main_path"
-    echo -e "=============================\n"
+# Upload common shell file:
+printOut $SCRIPT_PATH
+source $SCRIPT_PATH/common
+
+declare -A properties
+commands=()
+commands[0]='--export'  # local config path
+commands[1]='--import'  # local config path
+commands[2]='--linklib' # libkdecorations2private lib source file
+
+# User Settings:
+SCRIPT_NAME=dtenv_script
+
+# Extensions Package Name list
+ex_package_name_list=( \
+    'org.kde.windowbuttons' \
+)
+
+# arr_check___Path=( \
+
+# )
+# -----------------------------------
+
+# -----------------------------------
+# Func:
+
+# param1: source file
+linkLib() {
+    local LOCAL_SOURCE_FILE=$1
+    ln -s $LOCAL_SOURCE_FILE /usr/lib/libkdecorations2private.so.9
 }
 
-printBasePath
-# Applets install
-cd $main_path/extensions
-applets=`ls .`
+# param1: user home path
+installExtensions() {
+    local USER_HOME_PATH=$1
 
-for applet in $applets
-do
-    plasmapkg2 -i $applet
+    # Applets install
+    cd $EXTENSIONS
+    applets=`ls .`
+
+    for applet in $applets
+    do
+        plasmapkg2 -i $applet
+    done
+
+    cd $USER_HOME_PATH
+    out=$(./.local/share/plasma/plasmoids/org.kde.windowbuttons/lib-install.sh 2>&1)
+    printOut "$out"
+    unset out
+}
+
+# param1: local share path
+importExtensionsConfig() {
+    local LOCAL_SHARE_PATH=$1
+    local LOCAL_EXTENSIONS_PATH="$LOCAL_SHARE_PATH/plasma/plasmoids"
+
+    for conf in ${ex_package_name_list[@]};do
+        cp -Rf $LOCAL_EXTENSIONS_PATH/$conf/contents/config $PLASMA_MOD_CONFIGS/$conf
+    done
+}
+
+# param1: local share path
+exportExtensionsConfig() {
+    local LOCAL_SHARE_PATH=$1
+    local LOCAL_EXTENSIONS_PATH="$LOCAL_SHARE_PATH/plasma/plasmoids"
+
+    for conf in ${ex_package_name_list[@]};do
+        cp -Rf $PLASMA_MOD_CONFIGS/$conf/config $LOCAL_EXTENSIONS_PATH/$conf/contents 
+    done
+}
+
+# Main
+## Init Properties
+while [[ $# -gt 0 ]];do
+    # Key
+    check_command commands $1
+    if [[ $? == '0' ]];then
+        key=$1
+    else
+        printERROR "Commands init ERROR"
+        exit 1
+    fi
+
+    # Value
+    check_command commands $2
+    if [[ $? == '0' ]];then
+        value=''
+    else
+        if [[ -z $2 ]];then
+            value=''
+        else
+            value=$2
+        fi
+    fi
+
+    setProperty properties $key $value
+    if [[ -z $value ]];then shift 1; else shift 2; fi 
 done
+
+printProperties properties
+sleep 4
+
+## init check command
+isExistKey properties '--export'
+state1=$?
+isExistKey properties '--import'
+state2=$?
+printOut "State1: $state1 | State2: $state2"
+if [ $state1 == '1' ] && [ $state2 == '1' ];then
+    printERROR "Missing key parameters"
+    exit 1
+fi
+unset state1
+unset state2
+
+## Flow
+installExtensions "$(dirname $(dirname ${properties['--import']}))"
+
+isExistKey properties '--import'
+if [[ $? == '0' ]];then
+    importExtensionsConfig "${properties["--import"]}"
+fi
+
+isExistKey properties '--export'
+if [[ $? == '0' ]];then
+    exportExtensionsConfig "${properties["--export"]}"
+fi
+
+printOut " ------- Execution complete ------- "

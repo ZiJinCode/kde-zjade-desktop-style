@@ -1,0 +1,155 @@
+#!/bin/sh
+
+# param 
+# --------------------------------------
+# Main Variable:
+MAIN_PATH="$(dirname $(cd $(dirname $0);pwd))"
+SCRIPT_PATH="$MAIN_PATH/script" # !!!---------------->>>
+SCRIPT_FILE_PATH="$SCRIPT_PATH/$(basename $0)"
+
+# Upload common shell file:
+printOut $SCRIPT_PATH
+source $SCRIPT_PATH/common
+
+declare -A properties
+commands=()
+commands[0]='--export'  # local config path
+commands[1]='--import'  # local config path
+
+# User Settings:
+SCRIPT_NAME=dtenv_script
+
+# arr_check___Path=( \
+
+# )
+# -----------------------------------
+
+# -----------------------------------
+# Func
+
+# param1: local config path
+importConfig() {
+    local SYS_CONFIG_PATH=$1
+
+    printOut "Config import"
+    if [[ -d "$DT_ENV_CONFIGS" ]];then
+        rm -rf $DT_ENV_CONFIGS
+    fi
+
+    mkdir -p $DT_ENV_CONFIGS
+
+    # plasma config
+    cp -rf "$SYS_CONFIG_PATH/plasma-org.kde.plasma.desktop-appletsrc" "$config_path/"
+    cp -rf "$SYS_CONFIG_PATH/plasmarc" "$DT_ENV_CONFIGS/"
+    cp -rf "$SYS_CONFIG_PATH/plasmashellrc" "$DT_ENV_CONFIGS/"
+    cp -rf "$SYS_CONFIG_PATH/kdeglobals" "$DT_ENV_CONFIGS/"
+    cp -rf "$SYS_CONFIG_PATH/kdedefaults" "$DT_ENV_CONFIGS/"
+
+    # kwin condig
+    cp -rf "$SYS_CONFIG_PATH/kwinrc" "$DT_ENV_CONFIGS/"
+    cp -rf "$SYS_CONFIG_PATH/kwinrulesrc" "$DT_ENV_CONFIGS/"
+
+    #config input devices 
+    cp -rf "$SYS_CONFIG_PATH/kcminputrc" "$DT_ENV_CONFIGS/"
+
+    #shortcuts 全局快捷键
+    cp -rf "$SYS_CONFIG_PATH/kglobalshortcutsrc" "$DT_ENV_CONFIGS/"
+
+    #klipper config
+    cp -rf "$SYS_CONFIG_PATH/klipperrc" "$DT_ENV_CONFIGS/"
+
+    #kscreenlocker config
+    cp -rf "$SYS_CONFIG_PATH/kscreenlockerrc" "$DT_ENV_CONFIGS/"
+
+    #dolphin config
+    cp -rf "$SYS_CONFIG_PATH/dolphinrc" "$DT_ENV_CONFIGS/"
+
+    #konsole config
+    cp -rf "$SYS_CONFIG_PATH/konsolerc" "$DT_ENV_CONFIGS/"
+
+    #krunner config
+    cp -rf "$SYS_CONFIG_PATH/krunnerrc" "$DT_ENV_CONFIGS/krunnerrc"
+
+    # Other Config
+    #kvantum config
+    # mkdir -p $DT_ENV_CONFIGS/_Kvantum
+    cp -rf "$SYS_CONFIG_PATH/Kvantum/kvantum.kvconfig" $OTHER_CONFIGS
+
+    # sddm
+    cp -rf /etc/sddm.conf $OTHER_CONFIGS
+
+    printOut "Config imported"
+}
+
+# param1: local config path
+exportConfig() {
+    local SYS_CONFIG_PATH=$1
+
+    printOut "Config export"
+    cp -Rf $DT_ENV_CONFIGS/* $SYS_CONFIG_PATH
+    
+    # Kvantum
+    checkMkdir "$SYS_CONFIG_PATH/Kvantum/"
+    printWARNING "Check Msg: $SYS_CONFIG_PATH/Kvantum, state: $?"
+    cp -Rf $OTHER_CONFIGS/kvantum.kvconfig $SYS_CONFIG_PATH/Kvantum
+
+    # SDDM
+    cp -Rf $OTHER_CONFIGS/sddm.conf /etc/
+
+    printOut "Config exported"
+}
+
+# Main
+## Init Properties
+while [[ $# -gt 0 ]];do
+    # Key
+    check_command commands $1
+    if [[ $? == '0' ]];then
+        key=$1
+    else
+        printERROR "Commands init ERROR"
+        exit 1
+    fi
+
+    # Value
+    check_command commands $2
+    if [[ $? == '0' ]];then
+        value=''
+    else
+        if [[ -z $2 ]];then
+            value=''
+        else
+            value=$2
+        fi
+    fi
+
+    setProperty properties $key $value
+    if [[ -z $value ]];then shift 1; else shift 2; fi 
+done
+
+## init check command
+isExistKey properties '--import'
+state1=$?
+isExistKey properties '--export'
+state2=$?
+printOut "State1: $state1 | State2: $state2"
+if [ $state1 == '1' ] && [ $state2 == '1' ];then
+    printERROR "Missing key parameters"
+    exit 1
+fi
+unset state1
+unset state2
+
+
+# Flow
+isExistKey properties '--import'
+if [[ $? == '0' ]];then
+    importConfig "${properties['--import']}"
+fi
+
+isExistKey properties '--export'
+if [[ $? == '0' ]];then
+    exportConfig "${properties['--export']}"
+fi
+
+printOut " ------- Execution complete ------- "
