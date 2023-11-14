@@ -101,10 +101,10 @@ exports() {
 
 imports() {
     # Extensions
-    $SCRIPT_PATH/extensions --import "${main_prop["-o"]}/.local/share/plasma/plasmoids"
+    $SCRIPT_PATH/extensions --import "${main_prop["-i"]}/.local/share/plasma/plasmoids"
 
     # dtenv
-    $SCRIPT_PATH/dtenv --import "${main_prop["-o"]}/.config"
+    $SCRIPT_PATH/dtenv --import "${main_prop["-i"]}/.config"
 }
 
 isExistKey main_prop '-i'
