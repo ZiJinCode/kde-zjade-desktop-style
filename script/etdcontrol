@@ -17,6 +17,12 @@ declare -A extensions_prop
 declare -A theme_prop
 declare -A dtenv_prop
 global_commands=()
+global_commands[0]='-o'
+global_commands[1]='-i'
+global_commands[2]='--linklib'
+global_commands[3]='--no-install-kvantum'
+global_commands[4]='--no-install-roundedsbe'
+global_commands[5]='--no-install-roundedsbe-dep'
 # -----------------------------------
 
 ## Init Properties
