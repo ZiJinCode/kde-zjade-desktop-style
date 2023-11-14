@@ -46,19 +46,6 @@ while [[ $# -gt 0 ]];do
     if [[ -z $value ]];then shift 1; else shift 2; fi 
 done
 
-## init check command
-isExistKey properties '-o'
-state1=$?
-isExistKey properties '-i'
-state2=$?
-printOut "State1: $state1 | State2: $state2"
-if [ $state1 == '1' ] && [ $state2 == '1' ];then
-    printERROR "Missing key parameters"
-    exit 1
-fi
-unset state1
-unset state2
-
 # mod default=export or import  User Home path
 # mod linklib libkdecorations2private
 
@@ -85,21 +72,21 @@ exports() {
     $SCRIPT_PATH/extensions --export "${main_prop["-o"]}/.local/share/plasma/plasmoids" --linklib "${main_prop["--linklib"]}"
 
     # Theme
-    local no-i-k=''
-    local no-i-rd=''
-    local no-i-r=''
+    local noik=''
+    local noird=''
+    local noir=''
     isExistKey main_prop '--no-install-kvantum'
-    if [[ $? == '0' ]];then no-i-k='--no-install-kvantum'; fi
+    if [[ $? == '0' ]];then noik='--no-install-kvantum'; fi
     isExistKey main_prop '--no-install-roundedsbe'
-    if [[ $? == '0' ]];then no-i-r='--no-install-roundedsbe'; fi
+    if [[ $? == '0' ]];then noir='--no-install-roundedsbe'; fi
     isExistKey main_prop '--no-install-roundedsbe-dep'
-    if [[ $? == '0' ]];then no-i-rd='--no-install-roundedsbe-dep'; fi
+    if [[ $? == '0' ]];then noird='--no-install-roundedsbe-dep'; fi
 
     isExistKey main_prop '--global'
     if [[ $? == '0' ]];then
-        $SCRIPT_PATH/theme --global "${no-i-k}" "${no-i-rd}" "${no-i-r}"
+        $SCRIPT_PATH/theme --global "${noik}" "${noird}" "${noir}"
     else 
-        $SCRIPT_PATH/theme --local "${main_prop["-o"]}/.local/share" "${no-i-k}" "${no-i-rd}" "${no-i-r}"
+        $SCRIPT_PATH/theme --local "${main_prop["-o"]}/.local/share" "${noik}" "${noird}" "${noir}"
     fi
 
     # dtenv
@@ -117,10 +104,12 @@ imports() {
 isExistKey main_prop '-i'
 if [[ $? == '0' ]];then
     imports
+    chown $ORIGINAL_USER:$ORIGINAL_GROUP -R $MAIN_PATH/*
 fi
 
 isExistKey main_prop '-o'
 if [[ $? == '0' ]];then
     exports
+    chown $ORIGINAL_USER:$ORIGINAL_GROUP -R $MAIN_PATH/*
     exit 0
 fi

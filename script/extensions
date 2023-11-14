@@ -47,6 +47,8 @@ exportExtensions() {
 
     checkMkdir $LOCAL_PLASMAMOIDS_PATH
     cp -Rf $EXTENSIONS/* $LOCAL_PLASMAMOIDS_PATH
+
+    chown $ORIGINAL_USER:$ORIGINAL_GROUP -R $LOCAL_PLASMAMOIDS_PATH/*
     
     local USER_HOME_PATH="$(dirname $(dirname $(dirname $(dirname $LOCAL_PLASMAMOIDS_PATH))))"
 

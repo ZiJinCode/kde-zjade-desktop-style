@@ -82,6 +82,7 @@ importConfig() {
 
     # sddm
     cp -rf /etc/sddm.conf $OTHER_CONFIGS
+    chown $ORIGINAL_USER:$ORIGINAL_GROUP -R $DT_ENV_CONFIGS/*
 
     printOut "Config imported"
 }
