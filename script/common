@@ -7,9 +7,12 @@ MAIN_PATH="$(dirname $(cd $(dirname $0);pwd))"
 SCRIPT_PATH="$MAIN_PATH/script"
 SCRIPT_FILE_PATH="$SCRIPT_PATH/$(basename $0)"
 
+ORIGINAL_USER="$SUDO_USER"
+ORIGINAL_GROUP="$(id -gn $ORIGINAL_USER)"
+
 # # Upload common shell file:
-# printOut $SCRIPT_PATH
 # source $SCRIPT_PATH/common
+# printOut $SCRIPT_PATH
 
 _OUT='>>> '
 _ERROR='>>> !ERROR: '
@@ -17,7 +20,6 @@ _WARNING='>>> WARNING: '
 
 RESOURCE_PATH="$MAIN_PATH/resources"
 DT_ENV_CONFIGS="$RESOURCE_PATH/dt_env_configs"
-PLASMA_MOD_CONFIGS="$RESOURCE_PATH/plasma_mod_configs"
 EXTENSIONS="$RESOURCE_PATH/extensions"
 OTHER_CONFIGS="$RESOURCE_PATH/other_configs"
 
@@ -25,7 +27,6 @@ OTHER_CONFIGS="$RESOURCE_PATH/other_configs"
 arr_checkPath=( \
     "$RESOURCE_PATH" \
     "$DT_ENV_CONFIGS" \
-    "$PLASMA_MOD_CONFIGS" \
     "$EXTENSIONS" \
     "$OTHER_CONFIGS" \
 )

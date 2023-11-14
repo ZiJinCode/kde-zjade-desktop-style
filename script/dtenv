@@ -8,8 +8,8 @@ SCRIPT_PATH="$MAIN_PATH/script" # !!!---------------->>>
 SCRIPT_FILE_PATH="$SCRIPT_PATH/$(basename $0)"
 
 # Upload common shell file:
-printOut $SCRIPT_PATH
 source $SCRIPT_PATH/common
+printOut $SCRIPT_PATH
 
 declare -A properties
 commands=()
@@ -37,17 +37,16 @@ importConfig() {
     fi
 
     mkdir -p $DT_ENV_CONFIGS
-
     # plasma config
     cp -rf "$SYS_CONFIG_PATH/plasma-org.kde.plasma.desktop-appletsrc" "$config_path/"
     cp -rf "$SYS_CONFIG_PATH/plasmarc" "$DT_ENV_CONFIGS/"
     cp -rf "$SYS_CONFIG_PATH/plasmashellrc" "$DT_ENV_CONFIGS/"
     cp -rf "$SYS_CONFIG_PATH/kdeglobals" "$DT_ENV_CONFIGS/"
     cp -rf "$SYS_CONFIG_PATH/kdedefaults" "$DT_ENV_CONFIGS/"
-
+    cp -rf "$SYS_CONFIG_PATH/kdedefaults" "$DT_ENV_CONFIGS/"
     # kwin condig
     cp -rf "$SYS_CONFIG_PATH/kwinrc" "$DT_ENV_CONFIGS/"
-    cp -rf "$SYS_CONFIG_PATH/kwinrulesrc" "$DT_ENV_CONFIGS/"
+    cp -rf "$SYS_CONFIG_PATH/plasma-org.kde.plasma.desktop-appletsrc" "$DT_ENV_CONFIGS/"
 
     #config input devices 
     cp -rf "$SYS_CONFIG_PATH/kcminputrc" "$DT_ENV_CONFIGS/"
@@ -68,7 +67,13 @@ importConfig() {
     cp -rf "$SYS_CONFIG_PATH/konsolerc" "$DT_ENV_CONFIGS/"
 
     #krunner config
-    cp -rf "$SYS_CONFIG_PATH/krunnerrc" "$DT_ENV_CONFIGS/krunnerrc"
+    cp -rf "$SYS_CONFIG_PATH/krunnerrc" "$DT_ENV_CONFIGS/"
+
+    #ksmserverrc config
+    cp -rf "$SYS_CONFIG_PATH/ksmserverrc" "$DT_ENV_CONFIGS"
+
+    #kwinrulesrc config
+    cp -rf "$SYS_CONFIG_PATH/kwinrulesrc" "$DT_ENV_CONFIGS"
 
     # Other Config
     #kvantum config
@@ -92,6 +97,8 @@ exportConfig() {
     checkMkdir "$SYS_CONFIG_PATH/Kvantum/"
     printWARNING "Check Msg: $SYS_CONFIG_PATH/Kvantum, state: $?"
     cp -Rf $OTHER_CONFIGS/kvantum.kvconfig $SYS_CONFIG_PATH/Kvantum
+
+    chown $ORIGINAL_USER:$ORIGINAL_GROUP -R $SYS_CONFIG_PATH/*
 
     # SDDM
     cp -Rf $OTHER_CONFIGS/sddm.conf /etc/

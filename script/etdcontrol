@@ -1,0 +1,113 @@
+#!/bin/sh
+
+# ---------- Main Variable ----------
+MAIN_PATH="$(dirname $(cd $(dirname $0);pwd))"
+SCRIPT_PATH="$MAIN_PATH/script"
+SCRIPT_FILE_PATH="$SCRIPT_PATH/$(basename $0)"
+
+ORIGINAL_USER="$SUDO_USER"
+ORIGINAL_GROUP="$(id -gn $ORIGINAL_USER)"
+
+# Upload common shell file:
+source $SCRIPT_PATH/common
+printOut $SCRIPT_PATH
+
+declare -A main_prop
+declare -A extensions_prop
+declare -A theme_prop
+declare -A dtenv_prop
+global_commands=()
+# -----------------------------------
+
+## Init Properties
+while [[ $# -gt 0 ]];do
+    # Key
+    check_command global_commands $1
+    if [[ $? == '0' ]];then
+        key=$1
+    else
+        printERROR "global_commands init ERROR"
+        exit 1
+    fi
+
+    # Value
+    check_command global_commands $2
+    if [[ $? == '0' ]];then
+        value=''
+    else
+        if [[ -z $2 ]];then
+            value=''
+        else
+            value=$2
+        fi
+    fi
+
+    setProperty main_prop $key $value
+    if [[ -z $value ]];then shift 1; else shift 2; fi 
+done
+
+# mod default=export or import  User Home path
+# mod linklib libkdecorations2private
+
+# Extensions
+# '-o'  # local plasmoids path
+# '-i'  # local plasmoids path
+# '--linklib' # libkdecorations2private lib source file
+
+# Themes
+# '--local'   # local share path
+# '--global'  
+# '--no-install-kvantum'
+# '--no-install-roundedsbe'
+# '--no-install-roundedsbe-dep'
+
+# dtenv
+# '--export'  # local config path
+# '--import'  # local config path
+
+exports() {
+    checkMkdir "${main_prop["-o"]}/.local/share/plasma/plasmoids"
+
+    # Extensions
+    $SCRIPT_PATH/extensions --export "${main_prop["-o"]}/.local/share/plasma/plasmoids" --linklib "${main_prop["--linklib"]}"
+
+    # Theme
+    local no-i-k=''
+    local no-i-rd=''
+    local no-i-r=''
+    isExistKey main_prop '--no-install-kvantum'
+    if [[ $? == '0' ]];then no-i-k='--no-install-kvantum'; fi
+    isExistKey main_prop '--no-install-roundedsbe'
+    if [[ $? == '0' ]];then no-i-r='--no-install-roundedsbe'; fi
+    isExistKey main_prop '--no-install-roundedsbe-dep'
+    if [[ $? == '0' ]];then no-i-rd='--no-install-roundedsbe-dep'; fi
+
+    isExistKey main_prop '--global'
+    if [[ $? == '0' ]];then
+        $SCRIPT_PATH/theme --global "${no-i-k}" "${no-i-rd}" "${no-i-r}"
+    else 
+        $SCRIPT_PATH/theme --local "${main_prop["-o"]}/.local/share" "${no-i-k}" "${no-i-rd}" "${no-i-r}"
+    fi
+
+    # dtenv
+    $SCRIPT_PATH/dtenv --export "${main_prop["-o"]}/.config"
+}
+
+imports() {
+    # Extensions
+    $SCRIPT_PATH/extensions --import "${main_prop["-o"]}/.local/share/plasma/plasmoids"
+
+    # dtenv
+    $SCRIPT_PATH/dtenv --import "${main_prop["-o"]}/.config"
+}
+
+isExistKey main_prop '-i'
+if [[ $? == '0' ]];then
+    imports
+fi
+
+isExistKey main_prop '-o'
+if [[ $? == '0' ]];then
+    exports
+    exit 0
+fi

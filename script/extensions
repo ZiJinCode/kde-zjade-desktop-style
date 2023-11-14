@@ -8,22 +8,17 @@ SCRIPT_PATH="$MAIN_PATH/script" # !!!---------------->>>
 SCRIPT_FILE_PATH="$SCRIPT_PATH/$(basename $0)"
 
 # Upload common shell file:
-printOut $SCRIPT_PATH
 source $SCRIPT_PATH/common
+printOut $SCRIPT_PATH
 
 declare -A properties
 commands=()
-commands[0]='--export'  # local config path
-commands[1]='--import'  # local config path
+commands[0]='--export'  # local plasmoids path
+commands[1]='--import'  # local plasmoids path
 commands[2]='--linklib' # libkdecorations2private lib source file
 
 # User Settings:
 SCRIPT_NAME=dtenv_script
-
-# Extensions Package Name list
-ex_package_name_list=( \
-    'org.kde.windowbuttons' \
-)
 
 # arr_check___Path=( \
 
@@ -39,43 +34,26 @@ linkLib() {
     ln -s $LOCAL_SOURCE_FILE /usr/lib/libkdecorations2private.so.9
 }
 
-# param1: user home path
-installExtensions() {
-    local USER_HOME_PATH=$1
+# param1: local plasmoids path
+importExtensions() {
+    local LOCAL_PLASMAMOIDS_PATH=$1
 
-    # Applets install
-    cd $EXTENSIONS
-    applets=`ls .`
+    cp -Rf $LOCAL_PLASMAMOIDS_PATH/* $EXTENSIONS
+}
 
-    for applet in $applets
-    do
-        plasmapkg2 -i $applet
-    done
+# param1: local plasmoids path
+exportExtensions() {
+    local LOCAL_PLASMAMOIDS_PATH=$1
+
+    checkMkdir $LOCAL_PLASMAMOIDS_PATH
+    cp -Rf $EXTENSIONS/* $LOCAL_PLASMAMOIDS_PATH
+    
+    local USER_HOME_PATH="$(dirname $(dirname $(dirname $(dirname $LOCAL_PLASMAMOIDS_PATH))))"
 
     cd $USER_HOME_PATH
     out=$(./.local/share/plasma/plasmoids/org.kde.windowbuttons/lib-install.sh 2>&1)
     printOut "$out"
-    unset out
-}
-
-# param1: local share path
-importExtensionsConfig() {
-    local LOCAL_SHARE_PATH=$1
-    local LOCAL_EXTENSIONS_PATH="$LOCAL_SHARE_PATH/plasma/plasmoids"
-
-    for conf in ${ex_package_name_list[@]};do
-        cp -Rf $LOCAL_EXTENSIONS_PATH/$conf/contents/config $PLASMA_MOD_CONFIGS/$conf
-    done
-}
-
-# param1: local share path
-exportExtensionsConfig() {
-    local LOCAL_SHARE_PATH=$1
-    local LOCAL_EXTENSIONS_PATH="$LOCAL_SHARE_PATH/plasma/plasmoids"
-
-    for conf in ${ex_package_name_list[@]};do
-        cp -Rf $PLASMA_MOD_CONFIGS/$conf/config $LOCAL_EXTENSIONS_PATH/$conf/contents 
-    done
+    printOut "Linked"
 }
 
 # Main
@@ -123,16 +101,20 @@ unset state1
 unset state2
 
 ## Flow
-installExtensions "$(dirname $(dirname ${properties['--import']}))"
 
 isExistKey properties '--import'
 if [[ $? == '0' ]];then
-    importExtensionsConfig "${properties["--import"]}"
+    importExtensions "${properties["--import"]}"
 fi
 
 isExistKey properties '--export'
 if [[ $? == '0' ]];then
-    exportExtensionsConfig "${properties["--export"]}"
+    exportExtensions "${properties["--export"]}"
+fi
+
+isExistKey properties '--linklib'
+if [[ $? == '0' ]];then
+    linkLib "${properties["--linklib"]}"
 fi
 
 printOut " ------- Execution complete ------- "

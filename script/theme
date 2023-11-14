@@ -9,14 +9,14 @@ SCRIPT_PATH="$MAIN_PATH/script" # !!!---------------->>>
 SCRIPT_FILE_PATH="$SCRIPT_PATH/$(basename $0)"
 
 # Upload common shell file:
-printOut $SCRIPT_PATH
 source $SCRIPT_PATH/common
+printOut $SCRIPT_PATH
 
 declare -A properties
 commands=()
 commands[0]='--local'   # local share path
 commands[1]='--global'  
-commands[2]='--no-install-kvatum'
+commands[2]='--no-install-kvantum'
 commands[3]='--no-install-roundedsbe'
 commands[4]='--no-install-roundedsbe-dep'
 
@@ -39,6 +39,7 @@ arr_checkThemesPath=( \
     "$THEME_PATH/gtk_theme" \
     "$THEME_PATH/grub_theme" \
     "$THEME_PATH/sddm_theme" \
+    "$THEME_PATH/layout" \
 )
 # -----------------------------------
 
@@ -47,8 +48,7 @@ arr_checkThemesPath=( \
 
 installKvantum() {
     printOut "Kvantum Install"
-    local pacman_out=$(yes | pacman -Syy kvantum 2>&1)
-    printOut "$pacman_out"
+    yes | pacman -Syy kvantum
     printWARNING "Start Kvantummanager, close after 2 seconds"
     kvantummanager
     sleep 2
@@ -60,8 +60,11 @@ installKvantum() {
 
 installDepForRoundedSBE() {
     printOut "RoundedSBE Depend install"
-    local pacman_out=$(yes | pacman -Syy git make cmake gcc gettext extra-cmake-modules qt5-tools kcrash kglobalaccel kde-dev-utils kio knotifications kinit kwin kdecoration qt5-declarative qt5-x11extras 2>&1)
-    printOut "$pacman_out"
+    # yes | pacman -Syy git make cmake gcc gettext extra-cmake-modules qt5-tools kcrash kglobalaccel kde-dev-utils kio knotifications kinit kwin kdecoration qt5-declarative qt5-x11extras
+    yes | sudo pacman -Syy
+    yes | sudo pacman -S git make cmake 
+    yes | sudo pacman -S gcc gettext extra-cmake-modules qt5-tools  kde-dev-utils kinit kwin kdecoration qt5-declarative qt5-x11extras
+    yes | sudo pacman -S kcrash5 kglobalaccel5 kio5 knotifications5
     printOut "RoundedSBE Depend installed"
 }
 
@@ -81,8 +84,7 @@ installRoundedSBE() {
 
     cd $INSTALL_PATH/$WINDOW_STYLE_NAME
     printOut "$(ls -la | grep ./install.sh)"
-    local out=$(./install.sh 2>&1)
-    printOut "$out"
+    ./install.sh
     printOut "RoundedSBE installed"
 }
 
@@ -119,7 +121,7 @@ commonInstallTheme() {
     checkMkdir $GLOBAL_THEME_PATH/themes
     printWARNING "Check Msg: $GLOBAL_THEME_PATH/themes, state: $?"
     cp -Rf $THEME_PATH/gtk_theme/* $GLOBAL_THEME_PATH/themes
-    
+
     # Wallpapers
     checkMkdir $GLOBAL_THEME_PATH/wallpapers
     printWARNING "Check Msg: $GLOBAL_THEME_PATH/wallpapers, state: $?"
@@ -130,6 +132,11 @@ commonInstallTheme() {
     printWARNING "Check Msg: $GLOBAL_THEME_PATH/fonts, state: $?"
     cp -Rf $THEME_PATH/fonts/* $GLOBAL_THEME_PATH/fonts
     fc-cache -f -v
+
+    # Layout
+    checkMkdir $GLOBAL_THEME_PATH/plasma/layout-templates
+    printWARNING "Check Msg: $GLOBAL_THEME_PATH/plasma/layout-templates, state: $?"
+    cp -Rf $THEME_PATH/layout/* $GLOBAL_THEME_PATH/plasma/layout-templates
 
     # SDDM Theme
     checkMkdir $GLOBAL_THEME_PATH/sddm/themes
@@ -189,6 +196,8 @@ localInstallTheme() {
         new_dir_name="$(basename $dir_path)-icon"
         cp -Rf $dir_path $LOCAL_SHARE_PATH/icons/$new_dir_name
     done
+    chown $ORIGINAL_USER:$ORIGINAL_GROUP -R $LOCAL_SHARE_PATH/icons/*
+    
 
     # Cursors
     checkMkdir $LOCAL_SHARE_PATH/icons
@@ -197,16 +206,19 @@ localInstallTheme() {
         new_dir_name="$(basename $dir_path)-cursors"
         cp -Rf $dir_path $LOCAL_SHARE_PATH/icons/$new_dir_name
     done
+    chown $ORIGINAL_USER:$ORIGINAL_GROUP -R $LOCAL_SHARE_PATH/icons/*
 
     # Plasma Theme
     checkMkdir $LOCAL_SHARE_PATH/plasma/desktoptheme
     printWARNING "Check Msg: $LOCAL_SHARE_PATH/plasma/desktoptheme, state: $?"
     cp -Rf $THEME_PATH/plasma_theme/* $LOCAL_SHARE_PATH/plasma/desktoptheme/
+    chown $ORIGINAL_USER:$ORIGINAL_GROUP -R $LOCAL_SHARE_PATH/plasma/desktoptheme/*
 
     # Color
     checkMkdir $LOCAL_SHARE_PATH/color-schemes
     printWARNING "Check Msg: $LOCAL_SHARE_PATH/color-schemes, state: $?"
     cp -Rf $THEME_PATH/colors/* $LOCAL_SHARE_PATH/color-schemes
+    chown $ORIGINAL_USER:$ORIGINAL_GROUP -R $LOCAL_SHARE_PATH/color-schemes/*
 
     printOut "Local Theme Installed"
 }
@@ -288,7 +300,7 @@ unset for_check_status
 
 ## Flow
 ### Kvantum
-isExistKey properties '--no-install-kvatum'
+isExistKey properties '--no-install-kvantum'
 if [[ $? == '1' ]];then
     installKvantum
 else
