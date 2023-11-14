@@ -46,6 +46,19 @@ while [[ $# -gt 0 ]];do
     if [[ -z $value ]];then shift 1; else shift 2; fi 
 done
 
+## init check command
+isExistKey properties '-o'
+state1=$?
+isExistKey properties '-i'
+state2=$?
+printOut "State1: $state1 | State2: $state2"
+if [ $state1 == '1' ] && [ $state2 == '1' ];then
+    printERROR "Missing key parameters"
+    exit 1
+fi
+unset state1
+unset state2
+
 # mod default=export or import  User Home path
 # mod linklib libkdecorations2private
 
